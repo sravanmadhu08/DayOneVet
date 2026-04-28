@@ -1,0 +1,49 @@
+@media (min-width: 1280px) {
+    #container {
+        min-width: min(1500px, 96vw);
+    }
+
+    #content {
+        max-width: none;
+        width: min(1500px, calc(100vw - 48px));
+        margin-inline: auto;
+    }
+
+    #content-main {
+        width: 100%;
+    }
+
+    .change-list .filtered #changelist {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 260px;
+        gap: 24px;
+    }
+
+    .change-list .filtered #changelist-form {
+        min-width: 0;
+    }
+
+    #changelist table {
+        table-layout: auto;
+        width: 100%;
+    }
+
+    #changelist td,
+    #changelist th {
+        padding-block: 12px;
+    }
+
+    #changelist-filter {
+        position: sticky;
+        top: 16px;
+        align-self: start;
+        width: auto;
+        margin: 0;
+    }
+}
+
+@media (min-width: 1600px) {
+    #content {
+        width: min(1680px, calc(100vw - 80px));
+    }
+}

@@ -254,7 +254,7 @@ a { color: inherit; text-decoration: none; }
     backdrop-filter: blur(12px);
 }
 .nav {
-    max-width: 1120px;
+    max-width: min(1280px, calc(100vw - 48px));
     margin: 0 auto;
     min-height: 64px;
     padding: 0;
@@ -384,7 +384,7 @@ a { color: inherit; text-decoration: none; }
 }
 .page {
     position: relative;
-    max-width: 1120px;
+    max-width: min(1280px, calc(100vw - 48px));
     margin: 0 auto;
     padding: 42px 24px 72px;
 }
@@ -1728,5 +1728,25 @@ legend {
     .tile-selector,
     .tile-selector.compact {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (min-width: 1440px) {
+    .nav,
+    .page {
+        max-width: min(1440px, calc(100vw - 96px));
+    }
+    .stats-grid,
+    .deck-stats {
+        gap: 24px;
+    }
+    .resource-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    .flashcard-workspace {
+        grid-template-columns: minmax(0, 1fr) 380px;
+    }
+    .quiz-shell {
+        max-width: 900px;
     }
 }

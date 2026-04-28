@@ -1,4 +1,4 @@
-# RC
+# DayOneVet
 
 A minimal Django web app for RCVS exam preparation, built with SQLite, Django templates, built-in authentication, and light JavaScript.
 
