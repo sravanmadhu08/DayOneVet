@@ -62,14 +62,12 @@ class UserProfile(models.Model):
     ]
 
     CLASSIC = "classic"
-    FOREST = "forest"
     OCEAN = "ocean"
     PLUM = "plum"
     CONTRAST = "contrast"
 
     THEME_CHOICES = [
         (CLASSIC, "Classic"),
-        (FOREST, "Forest"),
         (OCEAN, "Ocean"),
         (PLUM, "Plum"),
         (CONTRAST, "High contrast"),

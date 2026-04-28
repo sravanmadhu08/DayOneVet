@@ -78,6 +78,7 @@ class UserProfileForm(forms.ModelForm):
         ]
         widgets = {
             "target_exam_date": forms.DateInput(attrs={"type": "date"}),
+            "weekly_goal_questions": forms.NumberInput(attrs={"min": 1, "max": 1000, "step": 1}),
         }
 
     def __init__(self, *args, **kwargs):

@@ -1,4 +1,5 @@
 import random
+from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -70,6 +71,13 @@ def profile(request):
     attempted = answers.filter(selected_choice__isnull=False).count()
     correct = answers.filter(is_correct=True).count()
     percent_correct = round((correct / attempted) * 100) if attempted else 0
+    now = timezone.now()
+    week_start = now - timedelta(days=now.weekday())
+    week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    weekly_answered = answers.filter(selected_choice__isnull=False, answered_at__gte=week_start).count()
+    weekly_goal = max(profile_obj.weekly_goal_questions or 1, 1)
+    weekly_goal_percent = min(round((weekly_answered / weekly_goal) * 100), 100)
+    weekly_goal_remaining = max(weekly_goal - weekly_answered, 0)
     completed_quizzes = request.user.quiz_attempts.filter(is_completed=True).count()
     private_cards = request.user.private_flashcards.count()
     due_flashcards = FlashcardReview.objects.filter(
@@ -105,6 +113,9 @@ def profile(request):
             "completed_quizzes": completed_quizzes,
             "private_cards": private_cards,
             "due_flashcards": due_flashcards,
+            "weekly_answered": weekly_answered,
+            "weekly_goal_percent": weekly_goal_percent,
+            "weekly_goal_remaining": weekly_goal_remaining,
         },
     )
 

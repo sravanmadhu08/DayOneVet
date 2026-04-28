@@ -39,13 +39,6 @@
         {{ theme_form.as_p }}
         <button class="button" type="submit">Save theme</button>
     </form>
-    <div class="theme-preview-strip">
-        <span class="theme-swatch classic-swatch"></span>
-        <span class="theme-swatch forest-swatch"></span>
-        <span class="theme-swatch ocean-swatch"></span>
-        <span class="theme-swatch plum-swatch"></span>
-        <span class="theme-swatch contrast-swatch"></span>
-    </div>
 </section>
 
 <section class="profile-grid">
@@ -71,9 +64,19 @@
         <p class="eyebrow">Study target</p>
         <h2>Weekly plan</h2>
         <div class="goal-ring">
-            <strong>{{ profile_obj.weekly_goal_questions }}</strong>
-            <span>questions per week</span>
+            <strong>{{ weekly_answered }}</strong>
+            <span>of {{ profile_obj.weekly_goal_questions }} this week</span>
         </div>
+        <div class="goal-progress" aria-label="Weekly goal progress">
+            <span style="width: {{ weekly_goal_percent }}%"></span>
+        </div>
+        <p class="muted">
+            {% if weekly_goal_remaining %}
+                {{ weekly_goal_remaining }} questions left to hit this week's goal.
+            {% else %}
+                Weekly goal reached. Nice work.
+            {% endif %}
+        </p>
         {% if profile_obj.target_exam_date %}
             <p class="muted">Target exam date: {{ profile_obj.target_exam_date|date:"M j, Y" }}</p>
         {% else %}
