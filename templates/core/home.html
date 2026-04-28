@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | RC{% endblock %}
+{% block content %}
+<section class="section-heading">
+    <p class="eyebrow">Dashboard</p>
+    <h1>Your preparation snapshot</h1>
+</section>
+
+<section class="stats-grid">
+    <article class="card stat"><span>{{ attempted }}</span><p>Questions attempted</p></article>
+    <article class="card stat"><span>{{ percent_correct }}%</span><p>Correct</p></article>
+    <article class="card stat"><span>{{ remaining }}</span><p>Questions remaining</p></article>
+    <article class="card stat"><span>{{ total_questions }}</span><p>Total questions</p></article>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h2>Recent quiz performance</h2>
+        <a class="button" href="{% url 'quiz_start' %}">Start quiz</a>
+    </div>
+    {% if recent_attempts %}
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Date</th><th>Attempted</th><th>Correct</th><th>Skipped</th><th>Score</th></tr></thead>
+                <tbody>
+                    {% for attempt in recent_attempts %}
+                        <tr>
+                            <td>{{ attempt.started_at|date:"M j, Y" }}</td>
+                            <td>{{ attempt.attempted_count }}</td>
+                            <td>{{ attempt.correct_count }}</td>
+                            <td>{{ attempt.skipped_count }}</td>
+                            <td>{{ attempt.percent_correct }}%</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="muted">No completed quizzes yet.</p>
+    {% endif %}
+</section>
+
+<section class="dashboard-actions">
+    <a class="card action-card" href="{% url 'study' %}">
+        <span>Study library</span>
+        <strong>Review notes, links, and downloadable PDFs</strong>
+    </a>
+    <a class="card action-card" href="{% url 'flashcards' %}">
+        <span>Flashcards</span>
+        <strong>Flip through high-yield clinical facts</strong>
+    </a>
+    <a class="card action-card" href="{% url 'forum' %}">
+        <span>Forum</span>
+        <strong>Discuss cases, revision plans, and tricky stems</strong>
+    </a>
+</section>
+{% endblock %}

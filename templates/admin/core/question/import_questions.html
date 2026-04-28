@@ -1,0 +1,72 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div id="content-main">
+    <p>
+        <a href="{% url 'admin:core_question_changelist' %}">&larr; Back to questions</a>
+    </p>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        <fieldset class="module aligned">
+            <h2>Upload JSON or Word file</h2>
+            {{ form.as_p }}
+        </fieldset>
+        <div class="submit-row">
+            <input type="submit" value="Import / Validate" class="default">
+        </div>
+    </form>
+
+    {% if preview %}
+        <fieldset class="module">
+            <h2>Preview</h2>
+            <p><strong>{{ preview.count }}</strong> questions ready. <strong>{{ preview.duplicates }}</strong> duplicates skipped.</p>
+            <p>Showing first 10 questions:</p>
+            <ol>
+                {% for question in preview.questions %}
+                    <li>
+                        <strong>{{ question.text }}</strong><br>
+                        Species: {{ question.species }} · System: {{ question.system }}
+                    </li>
+                {% endfor %}
+            </ol>
+        </fieldset>
+    {% endif %}
+
+    <fieldset class="module">
+        <h2>JSON format</h2>
+        <pre>[
+  {
+    "text": "Question text",
+    "species": "dog",
+    "system": "cardiology",
+    "explanation": "Explanation text",
+    "exam_tip": "Optional tip",
+    "choices": [
+      {"text": "Choice A", "is_correct": true},
+      {"text": "Choice B", "is_correct": false},
+      {"text": "Choice C", "is_correct": false},
+      {"text": "Choice D", "is_correct": false},
+      {"text": "Choice E if needed", "is_correct": false}
+    ]
+  }
+]</pre>
+    </fieldset>
+
+    <fieldset class="module">
+        <h2>Word format</h2>
+        <p>Separate each question block with a blank line.</p>
+        <pre>Species: dog
+System: cardiology
+Question: Question text
+A) Choice A
+B) Choice B
+C) Choice C
+D) Choice D
+E) Optional extra choice
+Answer: A
+Explanation: Explanation text
+Exam tip: Optional tip</pre>
+    </fieldset>
+</div>
+{% endblock %}

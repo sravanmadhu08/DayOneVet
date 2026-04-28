@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Forum | RC{% endblock %}
+{% block content %}
+<section class="section-heading with-action">
+    <div>
+        <p class="eyebrow">Discussion forum</p>
+        <h1>Clinical reasoning, study plans, and exam questions</h1>
+    </div>
+    {% if user.is_authenticated %}<a class="button" href="{% url 'new_topic' %}">New topic</a>{% endif %}
+</section>
+
+<section class="panel">
+    {% for topic in topics %}
+        <a class="topic-row" href="{% url 'topic_detail' topic.id %}">
+            <span>
+                <strong>{{ topic.title }}</strong>
+                <small>By {{ topic.author.username }} · {{ topic.created_at|date:"M j, Y" }}</small>
+            </span>
+            <em>{{ topic.reply_count }} replies</em>
+        </a>
+    {% empty %}
+        <p class="muted">No topics yet.</p>
+    {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Quiz Complete | RC{% endblock %}
+{% block content %}
+<section class="panel centered">
+    <p class="eyebrow">Quiz complete</p>
+    <h1>{{ attempt.percent_correct }}%</h1>
+    <p>{{ attempt.correct_count }} correct from {{ attempt.attempted_count }} answered. {{ attempt.skipped_count }} skipped.</p>
+    <div class="actions">
+        <a class="button" href="{% url 'quiz_start' %}">Start another</a>
+        <a class="button button-ghost" href="{% url 'home' %}">Dashboard</a>
+    </div>
+</section>
+{% endblock %}

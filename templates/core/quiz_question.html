@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Question {{ index }} | RC{% endblock %}
+{% block content %}
+<section class="quiz-shell">
+    <div class="panel">
+        <div class="panel-header">
+            <p class="eyebrow">Question {{ index }} of {{ attempt.total_questions }}</p>
+            <a class="button button-danger" href="{% url 'quiz_stop' attempt.id %}">Stop Quiz</a>
+        </div>
+        <article class="question-card">
+            <h1 class="question-text">{{ question.text }}</h1>
+            {% if question.image %}
+                <figure class="question-image">
+                    <img src="{{ question.image.url }}" alt="Question image">
+                </figure>
+            {% endif %}
+        </article>
+        <form method="post" class="choices">
+            {% csrf_token %}
+            {% for choice in choices %}
+                <label class="choice {% if reveal and answer.selected_choice_id == choice.id %}selected-choice{% endif %} {% if reveal and choice.is_correct %}correct{% elif reveal and answer.selected_choice_id == choice.id and not choice.is_correct %}incorrect{% endif %}">
+                    <input type="radio" name="choice" value="{{ choice.id }}" {% if reveal %}disabled{% endif %} {% if answer.selected_choice_id == choice.id %}checked{% endif %}>
+                    <span>{{ choice.text }}</span>
+                    {% if reveal %}
+                        <span class="choice-status">
+                            {% if answer.selected_choice_id == choice.id and choice.is_correct %}
+                                Your answer · Correct
+                            {% elif answer.selected_choice_id == choice.id %}
+                                Your answer · Incorrect
+                            {% elif choice.is_correct %}
+                                Correct answer
+                            {% endif %}
+                        </span>
+                    {% endif %}
+                </label>
+            {% endfor %}
+
+            {% if reveal %}
+                <div class="feedback">
+                    <h2>{% if answer.is_correct %}Correct{% elif answer.is_skipped %}Skipped{% else %}Incorrect{% endif %}</h2>
+                    <p><strong>Correct answer:</strong> {{ correct_choice.text }}</p>
+                    <p>{{ question.explanation }}</p>
+                    {% if question.exam_tip %}<p class="tip"><strong>Exam tip:</strong> {{ question.exam_tip }}</p>{% endif %}
+                </div>
+                <button class="button" name="action" value="next" type="submit">Next question</button>
+            {% else %}
+                <div class="actions">
+                    <button class="button" name="action" value="answer" type="submit">Submit answer</button>
+                    <button class="button button-ghost" name="action" value="skip" type="submit">Skip</button>
+                </div>
+            {% endif %}
+        </form>
+    </div>
+</section>
+{% endblock %}
+

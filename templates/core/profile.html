@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Profile | RC{% endblock %}
+{% block content %}
+<section class="profile-hero">
+    <div>
+        <p class="eyebrow">Account</p>
+        <h1>{{ profile_obj.name }}</h1>
+        <p>Manage your exam profile, study targets, and subscription readiness from one place.</p>
+    </div>
+    <div class="subscription-card">
+        <span>{{ profile_obj.get_subscription_status_display }}</span>
+        <strong>{{ profile_obj.get_plan_display }} plan</strong>
+        {% if profile_obj.current_period_end %}
+            <small>Renews {{ profile_obj.current_period_end|date:"M j, Y" }}</small>
+        {% elif profile_obj.trial_ends_at %}
+            <small>Trial ends {{ profile_obj.trial_ends_at|date:"M j, Y" }}</small>
+        {% else %}
+            <small>Billing integration ready</small>
+        {% endif %}
+    </div>
+</section>
+
+<section class="deck-stats profile-stats">
+    <article class="card stat mini-stat"><span>{{ attempted }}</span><p>Questions answered</p></article>
+    <article class="card stat mini-stat"><span>{{ percent_correct }}%</span><p>Correct</p></article>
+    <article class="card stat mini-stat"><span>{{ completed_quizzes }}</span><p>Completed quizzes</p></article>
+    <article class="card stat mini-stat"><span>{{ due_flashcards }}</span><p>Cards due</p></article>
+</section>
+
+<section class="panel theme-settings-panel">
+    <div>
+        <p class="eyebrow">Appearance</p>
+        <h2>Theme settings</h2>
+        <p class="muted">Choose a color scheme and whether it should use light or dark surfaces. This preference is saved to your profile.</p>
+    </div>
+    <form method="post" class="theme-settings-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="theme">
+        {{ theme_form.as_p }}
+        <button class="button" type="submit">Save theme</button>
+    </form>
+    <div class="theme-preview-strip">
+        <span class="theme-swatch classic-swatch"></span>
+        <span class="theme-swatch forest-swatch"></span>
+        <span class="theme-swatch ocean-swatch"></span>
+        <span class="theme-swatch plum-swatch"></span>
+        <span class="theme-swatch contrast-swatch"></span>
+    </div>
+</section>
+
+<section class="profile-grid">
+    <article class="panel profile-panel">
+        <p class="eyebrow">Subscription</p>
+        <h2>Release-ready account state</h2>
+        <div class="subscription-row">
+            <span>Plan</span>
+            <strong>{{ profile_obj.get_plan_display }}</strong>
+        </div>
+        <div class="subscription-row">
+            <span>Status</span>
+            <strong>{{ profile_obj.get_subscription_status_display }}</strong>
+        </div>
+        <div class="subscription-row">
+            <span>Private flashcards</span>
+            <strong>{{ private_cards }}</strong>
+        </div>
+        <p class="muted">Payment checkout is intentionally not active yet. These fields give the app a clean upgrade path for Stripe customer IDs, plan gating, trials, renewals, and invoices.</p>
+    </article>
+
+    <article class="panel profile-panel">
+        <p class="eyebrow">Study target</p>
+        <h2>Weekly plan</h2>
+        <div class="goal-ring">
+            <strong>{{ profile_obj.weekly_goal_questions }}</strong>
+            <span>questions per week</span>
+        </div>
+        {% if profile_obj.target_exam_date %}
+            <p class="muted">Target exam date: {{ profile_obj.target_exam_date|date:"M j, Y" }}</p>
+        {% else %}
+            <p class="muted">Add a target exam date to make progress tracking feel more personal.</p>
+        {% endif %}
+    </article>
+</section>
+
+<section class="panel profile-form-panel">
+    <p class="eyebrow">Profile details</p>
+    <h2>Edit account profile</h2>
+    <form method="post" class="form profile-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="profile">
+        {{ form.as_p }}
+        <button class="button" type="submit">Save profile</button>
+    </form>
+</section>
+{% endblock %}

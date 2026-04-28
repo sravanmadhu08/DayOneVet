@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}RC | RCVS Exam Preparation{% endblock %}
+{% block content %}
+<section class="hero">
+    <div class="hero-copy">
+        <p class="eyebrow">RCVS exam preparation</p>
+        <h1>RC</h1>
+        <p>Focused MCQs, flashcards, study resources, and peer discussion for veterinary graduates preparing with calm and structure.</p>
+        <div class="actions">
+            <a class="button" href="{% url 'register' %}">Register</a>
+            <a class="button button-ghost" href="{% url 'login' %}">Login</a>
+        </div>
+    </div>
+    <div class="hero-panel" aria-hidden="true">
+        <div>
+            <span>MCQ bank</span>
+            <strong>Species and system filters</strong>
+        </div>
+        <div>
+            <span>Progress</span>
+            <strong>Scores, skips, and remaining questions</strong>
+        </div>
+        <div>
+            <span>Revision</span>
+            <strong>Flashcards, notes, PDFs, and discussion</strong>
+        </div>
+    </div>
+</section>
+{% endblock %}

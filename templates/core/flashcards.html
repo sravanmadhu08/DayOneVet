@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Flashcards | RC{% endblock %}
+{% block content %}
+<section class="section-heading with-action">
+    <div>
+        <p class="eyebrow">Flashcards</p>
+        <h1>Spaced repetition deck</h1>
+    </div>
+    <div class="study-counter">
+        <strong>{{ due_count }}</strong>
+        <span>due now</span>
+    </div>
+</section>
+
+<section class="deck-stats">
+    <article class="card stat mini-stat"><span>{{ new_count }}</span><p>New</p></article>
+    <article class="card stat mini-stat"><span>{{ learning_count }}</span><p>Learning</p></article>
+    <article class="card stat mini-stat"><span>{{ private_count }}</span><p>Your cards</p></article>
+    <article class="card stat mini-stat"><span>{{ card_items|length }}</span><p>Total visible</p></article>
+</section>
+
+<section class="flashcard-workspace">
+    <div class="study-main">
+        <form method="get" class="panel filter-bar deck-filter">
+            <label>Deck
+                <select name="deck">
+                    <option value="all" {% if request.GET.deck != "private" %}selected{% endif %}>All visible cards</option>
+                    <option value="private" {% if request.GET.deck == "private" %}selected{% endif %}>My private cards</option>
+                </select>
+            </label>
+            <label>Species
+                <select name="species">
+                    <option value="">All species</option>
+                    {% for value, label in species_choices %}
+                        <option value="{{ value }}" {% if request.GET.species == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>System
+                <select name="system">
+                    <option value="">All systems</option>
+                    {% for value, label in system_choices %}
+                        <option value="{{ value }}" {% if request.GET.system == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <button class="button" type="submit">Filter</button>
+        </form>
+
+        {% if card_items %}
+            <section class="anki-review" data-card-total="{{ card_items|length }}">
+                {% for item in card_items %}
+                    <article class="study-card anki-card {% if forloop.first %}is-active{% endif %}" data-card-index="{{ forloop.counter0 }}">
+                        <div class="study-card-topline">
+                            <span>Card {{ forloop.counter }} of {{ card_items|length }}</span>
+                            <span class="deck-badges">
+                                {% if item.card.owner_id %}
+                                    <strong class="due-pill private-pill">Private</strong>
+                                {% else %}
+                                    <strong class="due-pill muted-pill">Shared</strong>
+                                {% endif %}
+                                {% if item.review and item.review.is_due %}
+                                    <strong class="due-pill">Due now</strong>
+                                {% elif item.review %}
+                                    <strong class="due-pill muted-pill">Next {{ item.review.next_review_at|date:"M j" }}</strong>
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <button class="flashcard focus-card" type="button" aria-label="Reveal answer">
+                            <span class="flashcard-inner">
+                                <span class="flashcard-face flashcard-front">
+                                    <small>Prompt</small>
+                                    {{ item.card.front }}
+                                </span>
+                                <span class="flashcard-face flashcard-back">
+                                    <small>Answer</small>
+                                    {{ item.card.back }}
+                                </span>
+                            </span>
+                        </button>
+
+                        <div class="study-controls">
+                            <button class="button button-ghost prev-card" type="button">Previous</button>
+                            <button class="button flip-card" type="button">Show answer</button>
+                            <button class="button button-ghost next-card" type="button">Next</button>
+                        </div>
+
+                        <form method="post" class="reminder-actions">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="review">
+                            <input type="hidden" name="card_id" value="{{ item.card.id }}">
+                            <button class="reminder again" name="rating" value="again" type="submit">
+                                <span>Again</span>
+                                <small>10 minutes</small>
+                            </button>
+                            <button class="reminder hard" name="rating" value="hard" type="submit">
+                                <span>Hard</span>
+                                <small>1 day</small>
+                            </button>
+                            <button class="reminder good" name="rating" value="good" type="submit">
+                                <span>Good</span>
+                                <small>3+ days</small>
+                            </button>
+                            <button class="reminder easy" name="rating" value="easy" type="submit">
+                                <span>Easy</span>
+                                <small>7+ days</small>
+                            </button>
+                        </form>
+                    </article>
+                {% endfor %}
+            </section>
+        {% else %}
+            <section class="panel">
+                <p class="muted">No flashcards match these filters yet.</p>
+            </section>
+        {% endif %}
+    </div>
+
+    <aside class="deck-sidebar">
+        <section class="reminder-panel">
+            <p class="eyebrow">Review queue</p>
+            <h2>Next reviews</h2>
+            <p class="muted">Ratings update each card's next review time, so easy cards appear less often and difficult cards come back sooner.</p>
+            <div class="reminder-list">
+                {% for review in upcoming_reviews %}
+                    <div>
+                        <strong>{{ review.flashcard.front|truncatechars:42 }}</strong>
+                        <span>{{ review.next_review_at|date:"M j, Y H:i" }}</span>
+                    </div>
+                {% empty %}
+                    <div>
+                        <strong>No future reminders yet</strong>
+                        <span>Review a card to build your queue.</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="panel add-card-panel">
+            <p class="eyebrow">Private deck</p>
+            <h2>Add your own card</h2>
+            <form method="post" class="form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                {{ create_form.as_p }}
+                <button class="button" type="submit">Add private card</button>
+            </form>
+        </section>
+    </aside>
+</section>
+
+<script>
+const studyCards = Array.from(document.querySelectorAll(".study-card"));
+let currentCard = 0;
+
+function showCard(index) {
+    if (!studyCards.length) return;
+    currentCard = Math.max(0, Math.min(index, studyCards.length - 1));
+    studyCards.forEach(function(card, cardIndex) {
+        card.classList.toggle("is-active", cardIndex === currentCard);
+        card.querySelector(".flashcard").classList.remove("is-flipped");
+        const flipButton = card.querySelector(".flip-card");
+        if (flipButton) flipButton.textContent = "Show answer";
+    });
+}
+
+function toggleActiveCard() {
+    const activeCard = studyCards[currentCard];
+    if (!activeCard) return;
+    const card = activeCard.querySelector(".flashcard");
+    card.classList.toggle("is-flipped");
+    const flipButton = activeCard.querySelector(".flip-card");
+    if (flipButton) {
+        flipButton.textContent = card.classList.contains("is-flipped") ? "Hide answer" : "Show answer";
+    }
+}
+
+document.querySelectorAll(".flashcard, .flip-card").forEach(function(control) {
+    control.addEventListener("click", toggleActiveCard);
+});
+
+document.querySelectorAll(".next-card").forEach(function(button) {
+    button.addEventListener("click", function() { showCard(currentCard + 1); });
+});
+
+document.querySelectorAll(".prev-card").forEach(function(button) {
+    button.addEventListener("click", function() { showCard(currentCard - 1); });
+});
+</script>
+{% endblock %}

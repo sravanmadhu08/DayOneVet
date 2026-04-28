@@ -1,0 +1,57 @@
+{% load static %}
+<!doctype html>
+<html lang="en"
+    {% if user.is_authenticated %}
+        data-theme="{{ user.profile.theme_scheme|default:'classic' }}"
+        data-mode="{{ user.profile.theme_mode|default:'light' }}"
+    {% else %}
+        data-theme="classic"
+        data-mode="light"
+    {% endif %}
+>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}RC{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <nav class="nav">
+            <a class="brand-lockup" href="{% url 'landing' %}">
+                <span class="brand">RC</span>
+                <span class="brand-copy">
+                    <strong>RCVS Prep</strong>
+                    <small>Clinical exam practice</small>
+                </span>
+            </a>
+            <div class="nav-links">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'home' %}">Dashboard</a>
+                    <a href="{% url 'quiz_start' %}">MCQs</a>
+                    <a href="{% url 'study' %}">Study</a>
+                    <a href="{% url 'flashcards' %}">Flashcards</a>
+                    <a href="{% url 'forum' %}">Forum</a>
+                    <a class="nav-user" href="{% url 'profile' %}">{{ user.username }}</a>
+                    <a class="button button-ghost" href="{% url 'logout' %}">Logout</a>
+                {% else %}
+                    <a href="{% url 'forum' %}">Forum</a>
+                    <a class="button button-ghost" href="{% url 'login' %}">Login</a>
+                    <a class="button" href="{% url 'register' %}">Register</a>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <main class="page">
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="message">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

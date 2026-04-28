@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Start Quiz | RC{% endblock %}
+{% block content %}
+<section class="section-heading quiz-heading">
+    <div>
+        <p class="eyebrow">{{ available_count }} questions available</p>
+        <h1>{% if mode %}Refine your MCQ session{% else %}How would you like to begin?{% endif %}</h1>
+    </div>
+    <p class="heading-note">Start with the way you think clinically, then narrow the second filter and choose the session length.</p>
+</section>
+
+{% if not mode %}
+<section class="quiz-path-grid">
+    <a class="quiz-path-card" href="{% url 'quiz_start' %}?mode=species">
+        <span>Start by species</span>
+        <strong>Dog, cat, horse, cow, exotics, wildlife, and more</strong>
+        <em>Choose species first, then narrow by body system.</em>
+    </a>
+    <a class="quiz-path-card" href="{% url 'quiz_start' %}?mode=system">
+        <span>Start by body system</span>
+        <strong>Cardiology, surgery, neurology, emergency, and more</strong>
+        <em>Choose system first, then narrow by species.</em>
+    </a>
+</section>
+{% else %}
+<form method="post" class="panel form quiz-builder" id="quiz-builder">
+    {% csrf_token %}
+    <div class="guided-flow">
+        {% if mode == "species" %}
+            <section class="selector-panel primary-panel">
+                <p class="step-label">Step 1</p>
+                <h2>Select species</h2>
+                <div class="tile-selector" data-group="species">
+                    {% for value, label in species_choices %}
+                        <button class="select-tile {% if value == 'all' %}is-selected{% endif %}" type="button" data-value="{{ value }}">{{ label }}</button>
+                    {% endfor %}
+                </div>
+                <div class="selected-inputs" data-inputs-for="species"></div>
+            </section>
+            <section class="selector-panel">
+                <p class="step-label">Step 2</p>
+                <h2>Select body system</h2>
+                <div class="tile-selector compact" data-group="systems">
+                    {% for value, label in system_choices %}
+                        <button class="select-tile {% if value == 'all' %}is-selected{% endif %}" type="button" data-value="{{ value }}">{{ label }}</button>
+                    {% endfor %}
+                </div>
+                <div class="selected-inputs" data-inputs-for="systems"></div>
+            </section>
+        {% else %}
+            <section class="selector-panel primary-panel">
+                <p class="step-label">Step 1</p>
+                <h2>Select body system</h2>
+                <div class="tile-selector compact" data-group="systems">
+                    {% for value, label in system_choices %}
+                        <button class="select-tile {% if value == 'all' %}is-selected{% endif %}" type="button" data-value="{{ value }}">{{ label }}</button>
+                    {% endfor %}
+                </div>
+                <div class="selected-inputs" data-inputs-for="systems"></div>
+            </section>
+            <section class="selector-panel">
+                <p class="step-label">Step 2</p>
+                <h2>Select species</h2>
+                <div class="tile-selector" data-group="species">
+                    {% for value, label in species_choices %}
+                        <button class="select-tile {% if value == 'all' %}is-selected{% endif %}" type="button" data-value="{{ value }}">{{ label }}</button>
+                    {% endfor %}
+                </div>
+                <div class="selected-inputs" data-inputs-for="species"></div>
+            </section>
+        {% endif %}
+    </div>
+    <div class="quiz-start-footer">
+        <label>{{ form.question_count.label }} {{ form.question_count }}</label>
+        <a class="button button-ghost" href="{% url 'quiz_start' %}">Change start point</a>
+        <button class="button" type="submit">Start quiz</button>
+    </div>
+</form>
+
+<script>
+document.querySelectorAll(".tile-selector").forEach(function(selector) {
+    const group = selector.dataset.group;
+    const inputHolder = document.querySelector('[data-inputs-for="' + group + '"]');
+
+    function syncInputs() {
+        inputHolder.innerHTML = "";
+        selector.querySelectorAll(".select-tile.is-selected").forEach(function(tile) {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = group;
+            input.value = tile.dataset.value;
+            inputHolder.appendChild(input);
+        });
+    }
+
+    selector.querySelectorAll(".select-tile").forEach(function(tile) {
+        tile.addEventListener("click", function() {
+            if (tile.dataset.value === "all") {
+                selector.querySelectorAll(".select-tile").forEach(function(otherTile) {
+                    otherTile.classList.remove("is-selected");
+                });
+                tile.classList.add("is-selected");
+            } else {
+                selector.querySelector('[data-value="all"]').classList.remove("is-selected");
+                tile.classList.toggle("is-selected");
+                if (!selector.querySelector(".select-tile.is-selected")) {
+                    selector.querySelector('[data-value="all"]').classList.add("is-selected");
+                }
+            }
+            syncInputs();
+        });
+    });
+
+    syncInputs();
+});
+</script>
+{% endif %}
+{% endblock %}
