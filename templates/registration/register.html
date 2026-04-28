@@ -1,12 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Register | RC{% endblock %}
 {% block content %}
-<section class="auth-card">
-    <h1>Create your account</h1>
+<section class="auth-card auth-split">
+    <div>
+        <p class="eyebrow">Start revising</p>
+        <h1>Create your account</h1>
+        <p class="muted">Set up your study profile, then jump straight into MCQs, flashcards, and resources.</p>
+    </div>
     <form method="post" class="form">
         {% csrf_token %}
+        {% if request.GET.next %}<input type="hidden" name="next" value="{{ request.GET.next }}">{% endif %}
         {{ form.as_p }}
         <button class="button" type="submit">Register</button>
     </form>
+    <p class="auth-link">Already registered? <a href="{% url 'login' %}">Log in</a></p>
 </section>
 {% endblock %}

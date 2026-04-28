@@ -1,12 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Login | RC{% endblock %}
 {% block content %}
-<section class="auth-card">
-    <h1>Welcome back</h1>
+<section class="auth-card auth-split">
+    <div>
+        <p class="eyebrow">Account access</p>
+        <h1>Welcome back</h1>
+        <p class="muted">Log in with your username or email to continue your RCVS revision.</p>
+    </div>
     <form method="post" class="form">
         {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
         {{ form.as_p }}
         <button class="button" type="submit">Login</button>
     </form>
+    <p class="auth-link">New to RC? <a href="{% url 'register' %}">Create an account</a></p>
 </section>
 {% endblock %}

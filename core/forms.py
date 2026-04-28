@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 
 from .models import (
@@ -16,11 +16,50 @@ SYSTEM_FILTER_CHOICES = [("all", "All systems")] + SYSTEM_CHOICES
 
 
 class RegisterForm(UserCreationForm):
-    email = forms.EmailField(required=False)
+    email = forms.EmailField(required=True, help_text="Used for account recovery and subscription receipts later.")
+    first_name = forms.CharField(required=False, max_length=150)
+    last_name = forms.CharField(required=False, max_length=150)
+    profession = forms.CharField(
+        required=False,
+        max_length=120,
+        help_text="For example: new graduate, small animal vet, mixed practice vet.",
+    )
 
     class Meta:
         model = User
-        fields = ["username", "email", "password1", "password2"]
+        fields = ["username", "email", "first_name", "last_name", "profession", "password1", "password2"]
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("An account with this email already exists.")
+        return email
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data["email"]
+        user.first_name = self.cleaned_data.get("first_name", "")
+        user.last_name = self.cleaned_data.get("last_name", "")
+        if commit:
+            user.save()
+            UserProfile.objects.create(
+                user=user,
+                profession=self.cleaned_data.get("profession", ""),
+                display_name=user.get_full_name() or user.username,
+            )
+        return user
+
+
+class EmailOrUsernameAuthenticationForm(AuthenticationForm):
+    username = forms.CharField(label="Username or email")
+
+    def clean(self):
+        identifier = self.cleaned_data.get("username", "").strip()
+        if "@" in identifier:
+            user = User.objects.filter(email__iexact=identifier).first()
+            if user:
+                self.cleaned_data["username"] = user.get_username()
+        return super().clean()
 
 
 class QuizStartForm(forms.Form):

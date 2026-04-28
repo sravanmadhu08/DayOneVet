@@ -8,9 +8,11 @@ from django.contrib.auth.views import LoginView
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils import timezone
 
 from .forms import (
+    EmailOrUsernameAuthenticationForm,
     FlashcardForm,
     ForumReplyForm,
     ForumTopicForm,
@@ -47,12 +49,16 @@ def register(request):
         user = form.save()
         login(request, user)
         messages.success(request, "Welcome to RC. Your account is ready.")
+        next_url = request.POST.get("next") or request.GET.get("next")
+        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+            return redirect(next_url)
         return redirect("home")
     return render(request, "registration/register.html", {"form": form})
 
 
 class CustomLoginView(LoginView):
     template_name = "registration/login.html"
+    authentication_form = EmailOrUsernameAuthenticationForm
     redirect_authenticated_user = True
 
     def get_success_url(self):

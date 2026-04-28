@@ -8,6 +8,65 @@ from django.utils import timezone
 from .models import Choice, Question, QuizAttempt, UserAnswer, UserProfile
 
 
+class AuthenticationFlowTests(TestCase):
+    def test_registration_creates_user_profile_and_logs_in(self):
+        response = self.client.post(
+            reverse("register"),
+            {
+                "username": "newvet",
+                "email": "newvet@example.com",
+                "first_name": "New",
+                "last_name": "Vet",
+                "profession": "Small animal vet",
+                "password1": "StrongPass123!",
+                "password2": "StrongPass123!",
+            },
+        )
+
+        self.assertRedirects(response, reverse("home"))
+        user = get_user_model().objects.get(username="newvet")
+        self.assertEqual(user.email, "newvet@example.com")
+        self.assertEqual(user.profile.profession, "Small animal vet")
+        self.assertEqual(user.profile.display_name, "New Vet")
+
+    def test_registration_rejects_duplicate_email(self):
+        get_user_model().objects.create_user(
+            username="existing",
+            email="taken@example.com",
+            password="StrongPass123!",
+        )
+
+        response = self.client.post(
+            reverse("register"),
+            {
+                "username": "another",
+                "email": "TAKEN@example.com",
+                "password1": "StrongPass123!",
+                "password2": "StrongPass123!",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response.context["form"], "email", "An account with this email already exists.")
+
+    def test_user_can_login_with_email(self):
+        get_user_model().objects.create_user(
+            username="emailvet",
+            email="emailvet@example.com",
+            password="StrongPass123!",
+        )
+
+        response = self.client.post(
+            reverse("login"),
+            {
+                "username": "emailvet@example.com",
+                "password": "StrongPass123!",
+            },
+        )
+
+        self.assertRedirects(response, reverse("home"))
+
+
 class ProfileWeeklyGoalTests(TestCase):
     def test_profile_shows_current_week_goal_progress(self):
         user = get_user_model().objects.create_user(username="weekly", password="pass12345")
