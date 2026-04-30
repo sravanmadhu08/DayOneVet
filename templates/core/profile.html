@@ -27,20 +27,6 @@
     <article class="card stat mini-stat"><span>{{ due_flashcards }}</span><p>Cards due</p></article>
 </section>
 
-<section class="panel theme-settings-panel">
-    <div>
-        <p class="eyebrow">Appearance</p>
-        <h2>Theme settings</h2>
-        <p class="muted">Choose a color scheme and whether it should use light or dark surfaces. This preference is saved to your profile.</p>
-    </div>
-    <form method="post" class="theme-settings-form">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="theme">
-        {{ theme_form.as_p }}
-        <button class="button" type="submit">Save theme</button>
-    </form>
-</section>
-
 <section class="profile-grid">
     <article class="panel profile-panel">
         <p class="eyebrow">Subscription</p>

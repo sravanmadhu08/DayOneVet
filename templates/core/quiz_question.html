@@ -4,11 +4,19 @@
 <section class="quiz-shell">
     <div class="panel">
         <div class="panel-header">
-            <p class="eyebrow">Question {{ index }} of {{ attempt.total_questions }}</p>
-            <a class="button button-danger" href="{% url 'quiz_stop' attempt.id %}">Stop Quiz</a>
+            <div>
+                <p class="eyebrow">{{ attempt.get_exam_mode_display }} - Question {{ index }} of {{ attempt.total_questions }}</p>
+                {% if attempt.is_timed %}
+                    <div class="quiz-timer" data-remaining-seconds="{{ remaining_seconds|default:0 }}" data-expired-url="{% url 'quiz_stop' attempt.id %}">
+                        <span>Time remaining</span>
+                        <strong data-timer-display>--:--</strong>
+                    </div>
+                {% endif %}
+            </div>
+            <a class="button button-danger" href="{% url 'quiz_stop' attempt.id %}">Stop quiz</a>
         </div>
         <article class="question-card">
-            <h1 class="question-text">{{ question.text }}</h1>
+            <div class="question-text">{{ question.text }}</div>
             {% if question.image %}
                 <figure class="question-image">
                     <img src="{{ question.image.url }}" alt="Question image">
@@ -24,9 +32,9 @@
                     {% if reveal %}
                         <span class="choice-status">
                             {% if answer.selected_choice_id == choice.id and choice.is_correct %}
-                                Your answer · Correct
+                                Your answer - Correct
                             {% elif answer.selected_choice_id == choice.id %}
-                                Your answer · Incorrect
+                                Your answer - Incorrect
                             {% elif choice.is_correct %}
                                 Correct answer
                             {% endif %}
@@ -45,12 +53,36 @@
                 <button class="button" name="action" value="next" type="submit">Next question</button>
             {% else %}
                 <div class="actions">
-                    <button class="button" name="action" value="answer" type="submit">Submit answer</button>
+                    <button class="button" name="action" value="answer" type="submit">{% if attempt.is_timed %}Save and continue{% else %}Submit answer{% endif %}</button>
                     <button class="button button-ghost" name="action" value="skip" type="submit">Skip</button>
                 </div>
             {% endif %}
         </form>
     </div>
 </section>
-{% endblock %}
+{% if attempt.is_timed %}
+<script>
+const timer = document.querySelector("[data-remaining-seconds]");
+const timerDisplay = document.querySelector("[data-timer-display]");
 
+function formatSeconds(totalSeconds) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
+}
+
+if (timer && timerDisplay) {
+    let remaining = Number(timer.dataset.remainingSeconds || 0);
+    timerDisplay.textContent = formatSeconds(remaining);
+    const interval = window.setInterval(function() {
+        remaining -= 1;
+        timerDisplay.textContent = formatSeconds(Math.max(remaining, 0));
+        if (remaining <= 0) {
+            window.clearInterval(interval);
+            window.location.href = timer.dataset.expiredUrl;
+        }
+    }, 1000);
+}
+</script>
+{% endif %}
+{% endblock %}

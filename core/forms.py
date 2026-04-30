@@ -63,15 +63,27 @@ class EmailOrUsernameAuthenticationForm(AuthenticationForm):
 
 
 class QuizStartForm(forms.Form):
-    species = forms.MultipleChoiceField(
+    PRACTICE = "practice"
+    TIMED = "timed"
+
+    quiz_mode = forms.ChoiceField(
+        choices=[
+            (PRACTICE, "Practice"),
+            (TIMED, "Timed exam"),
+        ],
+        initial=PRACTICE,
+        widget=forms.RadioSelect,
+        label="Mode",
+    )
+    species = forms.ChoiceField(
         choices=SPECIES_FILTER_CHOICES,
         required=False,
-        widget=forms.CheckboxSelectMultiple,
+        initial="all",
     )
-    systems = forms.MultipleChoiceField(
+    systems = forms.ChoiceField(
         choices=SYSTEM_FILTER_CHOICES,
         required=False,
-        widget=forms.CheckboxSelectMultiple,
+        initial="all",
         label="Body systems",
     )
     question_count = forms.ChoiceField(
@@ -86,6 +98,18 @@ class QuizStartForm(forms.Form):
         ],
         initial="10",
         label="Number of questions",
+    )
+    duration_minutes = forms.ChoiceField(
+        choices=[
+            ("15", "15 minutes"),
+            ("30", "30 minutes"),
+            ("60", "60 minutes"),
+            ("90", "90 minutes"),
+            ("120", "120 minutes"),
+        ],
+        initial="60",
+        required=False,
+        label="Timer",
     )
 
 
@@ -136,12 +160,6 @@ class UserProfileForm(forms.ModelForm):
             self.user.save(update_fields=["first_name", "last_name", "email"])
             profile.save()
         return profile
-
-
-class ThemePreferenceForm(forms.ModelForm):
-    class Meta:
-        model = UserProfile
-        fields = ["theme_scheme", "theme_mode"]
 
 
 class QuestionImportForm(forms.Form):

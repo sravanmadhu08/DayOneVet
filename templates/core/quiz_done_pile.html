@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Done Pile | RC{% endblock %}
+{% block content %}
+<section class="section-heading quiz-heading">
+    <div>
+        <p class="eyebrow">{{ done_count }} correctly answered</p>
+        <h1>Done pile</h1>
+    </div>
+    <p class="heading-note">Review questions you have already answered correctly, then attempt them again for spaced retrieval.</p>
+</section>
+
+<section class="done-pile-layout">
+    <form method="post" class="panel form quiz-builder simple-quiz-builder">
+        {% csrf_token %}
+        <div class="compact-heading">
+            <p class="eyebrow">Attempt again</p>
+            <h2>Start a quiz from your done pile</h2>
+        </div>
+        <div class="exam-mode-grid">
+            {% for value, label in form.quiz_mode.field.choices %}
+                <label class="exam-mode-card {% if form.quiz_mode.value == value %}is-selected{% endif %}" data-mode-card="{{ value }}">
+                    <input type="radio" name="{{ form.quiz_mode.name }}" value="{{ value }}" {% if form.quiz_mode.value == value %}checked{% endif %}>
+                    <span>{{ label }}</span>
+                    {% if value == "practice" %}
+                        <small>Revisit done questions with explanations after each answer.</small>
+                    {% else %}
+                        <small>Retest done questions under a timer.</small>
+                    {% endif %}
+                </label>
+            {% endfor %}
+        </div>
+        <div class="quiz-simple-grid">
+            <label>Species {{ form.species }}</label>
+            <label>Body system {{ form.systems }}</label>
+            <label>Questions {{ form.question_count }}</label>
+            <label class="timer-field" data-timer-field>Timer {{ form.duration_minutes }}</label>
+        </div>
+        <div class="quiz-start-footer">
+            <p class="muted">This quiz uses only questions from your done pile.</p>
+            <button class="button" type="submit">Attempt done pile</button>
+        </div>
+    </form>
+
+    <aside class="panel done-pile-browser">
+        <div class="panel-header">
+            <div>
+                <p class="eyebrow">Browse</p>
+                <h2>{{ filtered_count }} visible questions</h2>
+            </div>
+            <a class="button button-ghost" href="{% url 'quiz_start' %}">Back to MCQs</a>
+        </div>
+        <form method="get" class="filter-bar done-pile-filter">
+            <label>Species
+                <select name="species">
+                    <option value="">All species</option>
+                    {% for value, label in species_choices %}
+                        <option value="{{ value }}" {% if request.GET.species == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>System
+                <select name="system">
+                    <option value="">All systems</option>
+                    {% for value, label in system_choices %}
+                        <option value="{{ value }}" {% if request.GET.system == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <button class="button" type="submit">Filter</button>
+        </form>
+        <div class="done-question-list">
+            {% for question in questions %}
+                <article class="done-question-card">
+                    <p class="eyebrow">{{ question.get_species_display }} · {{ question.get_system_display }}</p>
+                    <h3>{{ question.text|truncatechars:140 }}</h3>
+                    <p class="muted">{{ question.explanation|truncatechars:180 }}</p>
+                </article>
+            {% empty %}
+                <p class="muted">No done-pile questions match these filters yet.</p>
+            {% endfor %}
+        </div>
+    </aside>
+</section>
+
+<script>
+const modeCards = document.querySelectorAll("[data-mode-card]");
+const timerField = document.querySelector("[data-timer-field]");
+
+function syncQuizMode() {
+    const checked = document.querySelector('input[name="quiz_mode"]:checked');
+    const isTimed = checked && checked.value === "timed";
+    timerField.hidden = !isTimed;
+    modeCards.forEach(function(card) {
+        const input = card.querySelector("input");
+        card.classList.toggle("is-selected", input.checked);
+    });
+}
+
+modeCards.forEach(function(card) {
+    card.addEventListener("click", syncQuizMode);
+});
+
+syncQuizMode();
+</script>
+{% endblock %}

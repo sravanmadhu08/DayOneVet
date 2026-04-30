@@ -16,6 +16,9 @@ from .models import (
     StudyResource,
     UserAnswer,
     UserProfile,
+    WeeklyStudyTopic,
+    WeeklyTopicAttachment,
+    WeeklyTopicProgress,
 )
 from .question_importer import load_and_validate_questions
 
@@ -27,8 +30,8 @@ class ChoiceInline(admin.TabularInline):
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "display_name", "plan", "subscription_status", "theme_scheme", "theme_mode", "weekly_goal_questions", "target_exam_date")
-    list_filter = ("plan", "subscription_status", "theme_scheme", "theme_mode")
+    list_display = ("user", "display_name", "plan", "subscription_status", "weekly_goal_questions", "target_exam_date")
+    list_filter = ("plan", "subscription_status")
     search_fields = ("user__username", "user__email", "display_name", "profession")
 
 
@@ -106,8 +109,8 @@ class QuestionAdmin(admin.ModelAdmin):
 
 @admin.register(QuizAttempt)
 class QuizAttemptAdmin(admin.ModelAdmin):
-    list_display = ("user", "started_at", "is_completed", "total_questions", "attempted_count", "correct_count", "skipped_count")
-    list_filter = ("is_completed", "started_at")
+    list_display = ("user", "started_at", "exam_mode", "duration_minutes", "is_completed", "total_questions", "attempted_count", "correct_count", "skipped_count")
+    list_filter = ("exam_mode", "is_completed", "started_at")
     readonly_fields = ("started_at", "completed_at", "question_order")
 
 
@@ -119,9 +122,29 @@ class UserAnswerAdmin(admin.ModelAdmin):
 
 @admin.register(StudyResource)
 class StudyResourceAdmin(admin.ModelAdmin):
-    list_display = ("title", "species", "system", "created_at")
-    list_filter = ("species", "system")
-    search_fields = ("title", "description")
+    list_display = ("title", "resource_type", "species", "system", "created_at")
+    list_filter = ("resource_type", "species", "system")
+    search_fields = ("title", "description", "external_url")
+
+
+class WeeklyTopicAttachmentInline(admin.TabularInline):
+    model = WeeklyTopicAttachment
+    extra = 1
+
+
+@admin.register(WeeklyStudyTopic)
+class WeeklyStudyTopicAdmin(admin.ModelAdmin):
+    list_display = ("title", "week_label", "display_order", "species", "system", "is_active", "created_at")
+    list_filter = ("week_label", "species", "system", "is_active")
+    search_fields = ("title", "description", "week_label")
+    inlines = [WeeklyTopicAttachmentInline]
+
+
+@admin.register(WeeklyTopicProgress)
+class WeeklyTopicProgressAdmin(admin.ModelAdmin):
+    list_display = ("user", "topic", "completed_at")
+    list_filter = ("completed_at", "topic__week_label")
+    search_fields = ("user__username", "user__email", "topic__title", "topic__week_label")
 
 
 @admin.register(Flashcard)

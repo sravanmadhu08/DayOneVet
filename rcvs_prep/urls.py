@@ -14,6 +14,7 @@ urlpatterns = [
     path("profile/", views.profile, name="profile"),
     path("home/", views.home, name="home"),
     path("quiz/start/", views.quiz_start, name="quiz_start"),
+    path("quiz/done/", views.quiz_done_pile, name="quiz_done_pile"),
     path("quiz/<int:attempt_id>/question/", views.quiz_question, name="quiz_question"),
     path("quiz/<int:attempt_id>/stop/", views.quiz_stop, name="quiz_stop"),
     path("study/", views.study_resources, name="study"),

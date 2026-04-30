@@ -1,12 +1,80 @@
 {% extends "base.html" %}
 {% block title %}Study | RC{% endblock %}
 {% block content %}
-<section class="section-heading">
-    <p class="eyebrow">Study resources</p>
-    <h1>Notes, links, and PDFs</h1>
+<section class="section-heading with-action">
+    <div>
+        <p class="eyebrow">Study resources</p>
+        <h1>Weekly topics, guidelines, and links</h1>
+    </div>
+    <div class="study-summary">
+        <div class="study-counter">
+            <strong>{{ weekly_completed }}</strong>
+            <span>completed</span>
+        </div>
+        <div class="study-counter">
+            <strong>{{ weekly_remaining }}</strong>
+            <span>remaining</span>
+        </div>
+        <div class="study-counter">
+            <strong>{{ weekly_total }}</strong>
+            <span>topics</span>
+        </div>
+    </div>
 </section>
 
-<form method="get" class="panel filter-bar">
+<nav class="study-tabs" aria-label="Study sections">
+    <a href="#weekly-topics">Weekly Topics</a>
+    <a href="#guidelines">General Guidelines</a>
+    <a href="#external-links">External Links</a>
+</nav>
+
+<section id="weekly-topics" class="study-section">
+    <div class="section-heading compact-heading">
+        <p class="eyebrow">Weekly topics</p>
+        <h2>Assigned PDF topics</h2>
+    </div>
+    {% for section in weekly_sections %}
+        <div class="week-group">
+            <h3>{{ section.label }}</h3>
+            <div class="weekly-topic-list">
+                {% for topic in section.topics %}
+                    <article class="card weekly-topic-card {% if topic.is_completed %}is-complete{% endif %}">
+                        <div class="topic-card-header">
+                            <div>
+                                <p class="eyebrow">{{ topic.get_species_display|default:"All species" }} · {{ topic.get_system_display|default:"All systems" }}</p>
+                                <h4>{{ topic.title }}</h4>
+                            </div>
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="topic_id" value="{{ topic.id }}">
+                                <button class="button {% if topic.is_completed %}button-ghost{% endif %}" type="submit">
+                                    {% if topic.is_completed %}Completed{% else %}Mark complete{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                        {% if topic.description %}<p>{{ topic.description }}</p>{% endif %}
+                        <div class="attachment-list">
+                            {% for attachment in topic.attachments.all %}
+                                <a class="attachment-link" href="{{ attachment.file.url }}" target="_blank" rel="noopener">
+                                    {{ attachment.title }}
+                                </a>
+                            {% empty %}
+                                <p class="muted">No PDFs attached yet.</p>
+                            {% endfor %}
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        </div>
+    {% empty %}
+        <article class="panel empty-panel">
+            <h2>No weekly topics yet</h2>
+            <p class="muted">Add weekly study topics and PDF attachments from the admin panel.</p>
+        </article>
+    {% endfor %}
+</section>
+
+<form method="get" class="panel filter-bar study-filter">
     <label>Species
         <select name="species">
             <option value="">All species</option>
@@ -23,22 +91,50 @@
             {% endfor %}
         </select>
     </label>
-    <button class="button" type="submit">Filter</button>
+    <button class="button" type="submit">Filter resources</button>
 </form>
 
-<section class="resource-grid">
-    {% for resource in resources %}
-        <article class="card">
-            <h2>{{ resource.title }}</h2>
-            <p>{{ resource.description }}</p>
-            <p class="muted">{{ resource.get_species_display|default:"All species" }} · {{ resource.get_system_display|default:"All systems" }}</p>
-            <div class="actions">
-                {% if resource.file %}<a class="button button-ghost" href="{{ resource.file.url }}">Download</a>{% endif %}
-                {% if resource.external_url %}<a class="button" href="{{ resource.external_url }}" target="_blank" rel="noopener">Open link</a>{% endif %}
-            </div>
-        </article>
-    {% empty %}
-        <p class="muted">No study resources have been added yet.</p>
-    {% endfor %}
+<section id="guidelines" class="study-section">
+    <div class="section-heading compact-heading">
+        <p class="eyebrow">General guidelines</p>
+        <h2>System and species guidance</h2>
+    </div>
+    <div class="resource-grid">
+        {% for resource in guidelines %}
+            <article class="card resource-card">
+                <p class="eyebrow">{{ resource.get_species_display|default:"All species" }} · {{ resource.get_system_display|default:"All systems" }}</p>
+                <h3>{{ resource.title }}</h3>
+                <p>{{ resource.description }}</p>
+                <div class="actions">
+                    {% if resource.file %}<a class="button button-ghost" href="{{ resource.file.url }}" target="_blank" rel="noopener">Download PDF</a>{% endif %}
+                    {% if resource.external_url %}<a class="button" href="{{ resource.external_url }}" target="_blank" rel="noopener">Open link</a>{% endif %}
+                </div>
+            </article>
+        {% empty %}
+            <p class="muted">No guidelines match these filters yet.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section id="external-links" class="study-section">
+    <div class="section-heading compact-heading">
+        <p class="eyebrow">External links</p>
+        <h2>Trusted references</h2>
+    </div>
+    <div class="resource-grid">
+        {% for resource in external_links %}
+            <article class="card resource-card">
+                <p class="eyebrow">{{ resource.get_species_display|default:"All species" }} · {{ resource.get_system_display|default:"All systems" }}</p>
+                <h3>{{ resource.title }}</h3>
+                <p>{{ resource.description }}</p>
+                <div class="actions">
+                    {% if resource.file %}<a class="button button-ghost" href="{{ resource.file.url }}" target="_blank" rel="noopener">Download</a>{% endif %}
+                    {% if resource.external_url %}<a class="button" href="{{ resource.external_url }}" target="_blank" rel="noopener">Open link</a>{% endif %}
+                </div>
+            </article>
+        {% empty %}
+            <p class="muted">No links match these filters yet.</p>
+        {% endfor %}
+    </div>
 </section>
 {% endblock %}

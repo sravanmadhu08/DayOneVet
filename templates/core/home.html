@@ -6,6 +6,41 @@
     <h1>Your preparation snapshot</h1>
 </section>
 
+<section class="dashboard-command">
+    <article class="panel progress-command">
+        <div>
+            <p class="eyebrow">Question bank</p>
+            <h2>{{ question_bank_progress }}% covered</h2>
+            <p class="muted">{{ remaining }} questions remaining from {{ total_questions }} total.</p>
+        </div>
+        <div class="progress-orb" style="--progress: {{ question_bank_progress }}%">
+            <strong>{{ question_bank_progress }}%</strong>
+            <span>complete</span>
+        </div>
+    </article>
+    <article class="panel quick-start-panel">
+        <p class="eyebrow">Quick start</p>
+        <h2>Choose your next session</h2>
+        <div class="quick-start-grid">
+            <a class="quick-start-option" href="{% url 'quiz_start' %}">
+                <span>Practice</span>
+                <strong>Instant feedback</strong>
+            </a>
+            <a class="quick-start-option" href="{% url 'quiz_start' %}">
+                <span>Timed exam</span>
+                <strong>Exam-style flow</strong>
+            </a>
+        </div>
+    </article>
+    <article class="panel focus-panel">
+        <p class="eyebrow">Today's focus</p>
+        <h2>Build momentum</h2>
+        <button class="focus-item" type="button"><span></span>Complete one MCQ set</button>
+        <button class="focus-item" type="button"><span></span>Review due flashcards</button>
+        <button class="focus-item" type="button"><span></span>Read one study resource</button>
+    </article>
+</section>
+
 <section class="stats-grid">
     <article class="card stat"><span>{{ attempted }}</span><p>Questions attempted</p></article>
     <article class="card stat"><span>{{ percent_correct }}%</span><p>Correct</p></article>
@@ -13,7 +48,22 @@
     <article class="card stat"><span>{{ total_questions }}</span><p>Total questions</p></article>
 </section>
 
-<section class="panel">
+<section class="dashboard-actions">
+    <a class="card action-card" href="{% url 'study' %}">
+        <span>Study library</span>
+        <strong>Review notes, links, and downloadable PDFs</strong>
+    </a>
+    <a class="card action-card" href="{% url 'flashcards' %}">
+        <span>Flashcards</span>
+        <strong>Flip through high-yield clinical facts</strong>
+    </a>
+    <a class="card action-card" href="{% url 'forum' %}">
+        <span>Forum</span>
+        <strong>Discuss cases, revision plans, and tricky stems</strong>
+    </a>
+</section>
+
+<section class="panel recent-performance-panel">
     <div class="panel-header">
         <h2>Recent quiz performance</h2>
         <a class="button" href="{% url 'quiz_start' %}">Start quiz</a>
@@ -40,18 +90,11 @@
     {% endif %}
 </section>
 
-<section class="dashboard-actions">
-    <a class="card action-card" href="{% url 'study' %}">
-        <span>Study library</span>
-        <strong>Review notes, links, and downloadable PDFs</strong>
-    </a>
-    <a class="card action-card" href="{% url 'flashcards' %}">
-        <span>Flashcards</span>
-        <strong>Flip through high-yield clinical facts</strong>
-    </a>
-    <a class="card action-card" href="{% url 'forum' %}">
-        <span>Forum</span>
-        <strong>Discuss cases, revision plans, and tricky stems</strong>
-    </a>
-</section>
+<script>
+document.querySelectorAll(".focus-item").forEach(function(item) {
+    item.addEventListener("click", function() {
+        item.classList.toggle("is-done");
+    });
+});
+</script>
 {% endblock %}

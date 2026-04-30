@@ -133,9 +133,19 @@ class Choice(models.Model):
 
 
 class QuizAttempt(models.Model):
+    PRACTICE = "practice"
+    TIMED = "timed"
+
+    QUIZ_MODE_CHOICES = [
+        (PRACTICE, "Practice"),
+        (TIMED, "Timed exam"),
+    ]
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="quiz_attempts")
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    exam_mode = models.CharField(max_length=20, choices=QUIZ_MODE_CHOICES, default=PRACTICE)
+    duration_minutes = models.PositiveIntegerField(null=True, blank=True)
     total_questions = models.PositiveIntegerField(default=0)
     attempted_count = models.PositiveIntegerField(default=0)
     correct_count = models.PositiveIntegerField(default=0)
@@ -152,6 +162,26 @@ class QuizAttempt(models.Model):
         if self.attempted_count == 0:
             return 0
         return round((self.correct_count / self.attempted_count) * 100)
+
+    @property
+    def is_timed(self):
+        return self.exam_mode == self.TIMED and self.duration_minutes
+
+    @property
+    def ends_at(self):
+        if not self.is_timed:
+            return None
+        return self.started_at + timezone.timedelta(minutes=self.duration_minutes)
+
+    @property
+    def remaining_seconds(self):
+        if not self.ends_at:
+            return None
+        return max(int((self.ends_at - timezone.now()).total_seconds()), 0)
+
+    @property
+    def time_has_expired(self):
+        return self.is_timed and self.remaining_seconds == 0
 
     def complete(self):
         answers = self.answers.all()
@@ -189,8 +219,17 @@ class UserAnswer(models.Model):
 
 
 class StudyResource(models.Model):
+    GUIDELINE = "guideline"
+    EXTERNAL_LINK = "external_link"
+
+    RESOURCE_TYPE_CHOICES = [
+        (GUIDELINE, "General guideline"),
+        (EXTERNAL_LINK, "External link"),
+    ]
+
     title = models.CharField(max_length=200)
     description = models.TextField()
+    resource_type = models.CharField(max_length=30, choices=RESOURCE_TYPE_CHOICES, default=GUIDELINE)
     file = models.FileField(upload_to="study_resources/", blank=True, null=True)
     external_url = models.URLField(blank=True)
     species = models.CharField(max_length=40, choices=SPECIES_CHOICES, blank=True)
@@ -198,10 +237,53 @@ class StudyResource(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["title"]
+        ordering = ["resource_type", "title"]
 
     def __str__(self):
         return self.title
+
+
+class WeeklyStudyTopic(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    week_label = models.CharField(max_length=120)
+    display_order = models.PositiveIntegerField(default=0)
+    species = models.CharField(max_length=40, choices=SPECIES_CHOICES, blank=True)
+    system = models.CharField(max_length=60, choices=SYSTEM_CHOICES, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["display_order", "week_label", "title"]
+
+    def __str__(self):
+        return f"{self.week_label} - {self.title}"
+
+
+class WeeklyTopicAttachment(models.Model):
+    topic = models.ForeignKey(WeeklyStudyTopic, on_delete=models.CASCADE, related_name="attachments")
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to="weekly_topics/")
+    display_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["display_order", "title"]
+
+    def __str__(self):
+        return self.title
+
+
+class WeeklyTopicProgress(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="weekly_topic_progress")
+    topic = models.ForeignKey(WeeklyStudyTopic, on_delete=models.CASCADE, related_name="progress")
+    completed_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        unique_together = ("user", "topic")
+        ordering = ["-completed_at"]
+
+    def __str__(self):
+        return f"{self.user} completed {self.topic}"
 
 
 class Flashcard(models.Model):

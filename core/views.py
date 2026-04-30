@@ -18,7 +18,6 @@ from .forms import (
     ForumTopicForm,
     QuizStartForm,
     RegisterForm,
-    ThemePreferenceForm,
     UserProfileForm,
 )
 from .models import (
@@ -32,6 +31,8 @@ from .models import (
     StudyResource,
     UserAnswer,
     UserProfile,
+    WeeklyStudyTopic,
+    WeeklyTopicProgress,
 )
 
 
@@ -91,16 +92,8 @@ def profile(request):
     ).filter(Q(next_review_at__lte=timezone.now()) | Q(review_count=0)).count()
 
     form = UserProfileForm(instance=profile_obj, user=request.user)
-    theme_form = ThemePreferenceForm(instance=profile_obj)
     if request.method == "POST":
-        action = request.POST.get("action")
-        if action == "theme":
-            theme_form = ThemePreferenceForm(request.POST, instance=profile_obj)
-            if theme_form.is_valid():
-                theme_form.save()
-                messages.success(request, "Theme settings updated.")
-                return redirect("profile")
-        else:
+        if request.POST.get("action") == "profile":
             form = UserProfileForm(request.POST, instance=profile_obj, user=request.user)
             if form.is_valid():
                 form.save()
@@ -113,7 +106,6 @@ def profile(request):
         {
             "profile_obj": profile_obj,
             "form": form,
-            "theme_form": theme_form,
             "attempted": attempted,
             "percent_correct": percent_correct,
             "completed_quizzes": completed_quizzes,
@@ -135,6 +127,7 @@ def home(request):
     seen_questions = answers.filter(Q(selected_choice__isnull=False) | Q(is_skipped=True)).values("question_id").distinct().count()
     remaining = max(total_questions - seen_questions, 0)
     percent_correct = round((correct / attempted) * 100) if attempted else 0
+    question_bank_progress = round((seen_questions / total_questions) * 100) if total_questions else 0
     recent_attempts = request.user.quiz_attempts.filter(is_completed=True)[:5]
 
     return render(
@@ -146,6 +139,7 @@ def home(request):
             "percent_correct": percent_correct,
             "remaining": remaining,
             "total_questions": total_questions,
+            "question_bank_progress": question_bank_progress,
             "recent_attempts": recent_attempts,
         },
     )
@@ -154,25 +148,38 @@ def home(request):
 @login_required
 def quiz_start(request):
     form = QuizStartForm(request.POST or None)
-    available_count = Question.objects.count()
-    mode = request.GET.get("mode")
-    if mode not in {"species", "system"}:
-        mode = None
+    done_question_ids = set(
+        UserAnswer.objects.filter(quiz_attempt__user=request.user, is_correct=True).values_list("question_id", flat=True)
+    )
+    total_count = Question.objects.count()
+    available_questions = Question.objects.exclude(id__in=done_question_ids)
+    available_count = available_questions.count()
+    done_count = len(done_question_ids)
+    species_counts = []
+    for value, label in SPECIES_CHOICES:
+        total_for_species = Question.objects.filter(species=value).count()
+        available_for_species = available_questions.filter(species=value).count()
+        if total_for_species:
+            species_counts.append(
+                {
+                    "value": value,
+                    "label": label,
+                    "available": available_for_species,
+                    "done": max(total_for_species - available_for_species, 0),
+                    "total": total_for_species,
+                }
+            )
 
     if request.method == "POST" and form.is_valid():
-        questions = Question.objects.prefetch_related("choices").all()
-        species = form.cleaned_data["species"]
-        systems = form.cleaned_data["systems"]
+        questions = available_questions.prefetch_related("choices")
+        selected_species = form.cleaned_data["species"]
+        selected_system = form.cleaned_data["systems"]
+        quiz_mode = form.cleaned_data["quiz_mode"]
 
-        if "all" in species:
-            species = []
-        if "all" in systems:
-            systems = []
-
-        if species:
-            questions = questions.filter(species__in=species)
-        if systems:
-            questions = questions.filter(system__in=systems)
+        if selected_species and selected_species != "all":
+            questions = questions.filter(species=selected_species)
+        if selected_system and selected_system != "all":
+            questions = questions.filter(system=selected_system)
 
         question_ids = list(questions.values_list("id", flat=True))
         random.shuffle(question_ids)
@@ -181,11 +188,13 @@ def quiz_start(request):
             question_ids = question_ids[: int(requested_count)]
 
         if not question_ids:
-            messages.warning(request, "No questions match those filters yet.")
+            messages.warning(request, "No unanswered questions match those filters yet.")
             return redirect("quiz_start")
 
         attempt = QuizAttempt.objects.create(
             user=request.user,
+            exam_mode=quiz_mode,
+            duration_minutes=int(form.cleaned_data["duration_minutes"]) if quiz_mode == QuizStartForm.TIMED else None,
             total_questions=len(question_ids),
             question_order=question_ids,
         )
@@ -198,9 +207,71 @@ def quiz_start(request):
         {
             "form": form,
             "available_count": available_count,
-            "mode": mode,
-            "species_choices": [("all", "All species")] + SPECIES_CHOICES,
-            "system_choices": [("all", "All systems")] + SYSTEM_CHOICES,
+            "done_count": done_count,
+            "total_count": total_count,
+            "species_counts": species_counts,
+        },
+    )
+
+
+@login_required
+def quiz_done_pile(request):
+    form = QuizStartForm(request.POST or None)
+    done_question_ids = set(
+        UserAnswer.objects.filter(quiz_attempt__user=request.user, is_correct=True).values_list("question_id", flat=True)
+    )
+    done_questions = Question.objects.filter(id__in=done_question_ids).prefetch_related("choices")
+    done_count = done_questions.count()
+
+    if request.method == "POST" and form.is_valid():
+        questions = done_questions
+        selected_species = form.cleaned_data["species"]
+        selected_system = form.cleaned_data["systems"]
+        quiz_mode = form.cleaned_data["quiz_mode"]
+
+        if selected_species and selected_species != "all":
+            questions = questions.filter(species=selected_species)
+        if selected_system and selected_system != "all":
+            questions = questions.filter(system=selected_system)
+
+        question_ids = list(questions.values_list("id", flat=True))
+        random.shuffle(question_ids)
+        requested_count = form.cleaned_data["question_count"]
+        if requested_count != "all":
+            question_ids = question_ids[: int(requested_count)]
+
+        if not question_ids:
+            messages.warning(request, "No done-pile questions match those filters yet.")
+            return redirect("quiz_done_pile")
+
+        attempt = QuizAttempt.objects.create(
+            user=request.user,
+            exam_mode=quiz_mode,
+            duration_minutes=int(form.cleaned_data["duration_minutes"]) if quiz_mode == QuizStartForm.TIMED else None,
+            total_questions=len(question_ids),
+            question_order=question_ids,
+        )
+        request.session[f"quiz_{attempt.id}_index"] = 0
+        return redirect("quiz_question", attempt_id=attempt.id)
+
+    species = request.GET.get("species")
+    system = request.GET.get("system")
+    filtered_questions = done_questions
+    if species:
+        filtered_questions = filtered_questions.filter(species=species)
+    if system:
+        filtered_questions = filtered_questions.filter(system=system)
+
+    return render(
+        request,
+        "core/quiz_done_pile.html",
+        {
+            "form": form,
+            "done_count": done_count,
+            "questions": filtered_questions[:100],
+            "filtered_count": filtered_questions.count(),
+            "species_choices": SPECIES_CHOICES,
+            "system_choices": SYSTEM_CHOICES,
         },
     )
 
@@ -212,9 +283,15 @@ def quiz_question(request, attempt_id):
     index_key = f"quiz_{attempt.id}_index"
     index = request.session.get(index_key, 0)
 
+    if attempt.time_has_expired and not attempt.is_completed:
+        complete_attempt_with_missing_answers(attempt)
+        request.session.pop(index_key, None)
+        messages.info(request, "Time is up. Your timed exam has been saved.")
+        return render(request, "core/quiz_complete.html", {"attempt": attempt})
+
     if attempt.is_completed or index >= len(question_ids):
         if not attempt.is_completed:
-            attempt.complete()
+            complete_attempt_with_missing_answers(attempt)
         request.session.pop(index_key, None)
         return render(request, "core/quiz_complete.html", {"attempt": attempt})
 
@@ -238,6 +315,9 @@ def quiz_question(request, attempt_id):
             answer.is_skipped = False
             answer.save(update_fields=["selected_choice", "is_correct", "is_skipped"])
         answer.refresh_from_db()
+        if attempt.is_timed:
+            request.session[index_key] = index + 1
+            return redirect("quiz_question", attempt_id=attempt.id)
         reveal = True
 
     if request.method == "POST" and request.POST.get("action") == "next" and reveal:
@@ -256,23 +336,28 @@ def quiz_question(request, attempt_id):
             "correct_choice": correct_choice,
             "index": index + 1,
             "reveal": reveal,
+            "remaining_seconds": attempt.remaining_seconds,
         },
     )
+
+
+def complete_attempt_with_missing_answers(attempt):
+    answered_ids = set(attempt.answers.values_list("question_id", flat=True))
+    missing_answers = [
+        UserAnswer(quiz_attempt=attempt, question_id=question_id, is_skipped=True, is_correct=False)
+        for question_id in attempt.question_order
+        if question_id not in answered_ids
+    ]
+    UserAnswer.objects.bulk_create(missing_answers)
+    attempt.answers.filter(selected_choice__isnull=True, is_skipped=False).update(is_skipped=True, is_correct=False)
+    attempt.complete()
 
 
 @login_required
 def quiz_stop(request, attempt_id):
     attempt = get_object_or_404(QuizAttempt, id=attempt_id, user=request.user)
     if not attempt.is_completed:
-        answered_ids = set(attempt.answers.values_list("question_id", flat=True))
-        missing_answers = [
-            UserAnswer(quiz_attempt=attempt, question_id=question_id, is_skipped=True, is_correct=False)
-            for question_id in attempt.question_order
-            if question_id not in answered_ids
-        ]
-        UserAnswer.objects.bulk_create(missing_answers)
-        attempt.answers.filter(selected_choice__isnull=True, is_skipped=False).update(is_skipped=True, is_correct=False)
-        attempt.complete()
+        complete_attempt_with_missing_answers(attempt)
     request.session.pop(f"quiz_{attempt.id}_index", None)
     messages.info(request, "Quiz stopped and saved.")
     return redirect("home")
@@ -280,17 +365,57 @@ def quiz_stop(request, attempt_id):
 
 @login_required
 def study_resources(request):
-    resources = StudyResource.objects.all()
+    if request.method == "POST":
+        topic = get_object_or_404(WeeklyStudyTopic, id=request.POST.get("topic_id"), is_active=True)
+        progress, created = WeeklyTopicProgress.objects.get_or_create(user=request.user, topic=topic)
+        if created:
+            messages.success(request, "Weekly topic marked complete.")
+        else:
+            progress.delete()
+            messages.info(request, "Weekly topic marked incomplete.")
+        return redirect(f"{request.path}?{request.GET.urlencode()}" if request.GET else request.path)
+
     species = request.GET.get("species")
     system = request.GET.get("system")
+
+    resources = StudyResource.objects.all()
     if species:
         resources = resources.filter(Q(species=species) | Q(species=""))
     if system:
         resources = resources.filter(Q(system=system) | Q(system=""))
+
+    weekly_topics = list(
+        WeeklyStudyTopic.objects.filter(is_active=True)
+        .prefetch_related("attachments")
+        .order_by("display_order", "week_label", "title")
+    )
+    completed_ids = set(
+        WeeklyTopicProgress.objects.filter(user=request.user, topic__in=weekly_topics).values_list("topic_id", flat=True)
+    )
+    weekly_sections = []
+    for topic in weekly_topics:
+        topic.is_completed = topic.id in completed_ids
+        if not weekly_sections or weekly_sections[-1]["label"] != topic.week_label:
+            weekly_sections.append({"label": topic.week_label, "topics": []})
+        weekly_sections[-1]["topics"].append(topic)
+
+    guidelines = resources.filter(resource_type=StudyResource.GUIDELINE)
+    external_links = resources.filter(resource_type=StudyResource.EXTERNAL_LINK)
+    weekly_total = len(weekly_topics)
+    weekly_completed = len(completed_ids)
     return render(
         request,
         "core/study.html",
-        {"resources": resources, "species_choices": SPECIES_CHOICES, "system_choices": SYSTEM_CHOICES},
+        {
+            "weekly_sections": weekly_sections,
+            "weekly_total": weekly_total,
+            "weekly_completed": weekly_completed,
+            "weekly_remaining": max(weekly_total - weekly_completed, 0),
+            "guidelines": guidelines,
+            "external_links": external_links,
+            "species_choices": SPECIES_CHOICES,
+            "system_choices": SYSTEM_CHOICES,
+        },
     )
 
 
