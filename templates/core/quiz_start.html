@@ -3,7 +3,7 @@
 {% block content %}
 <section class="section-heading quiz-heading">
     <div>
-        <p class="eyebrow">{{ available_count }} questions available · {{ done_count }} done</p>
+        <p class="eyebrow">{{ available_count }} questions available - {{ done_count }} done</p>
         <h1>Start MCQs</h1>
     </div>
     <p class="heading-note">Correctly answered questions move into your done pile, so new sessions focus on what remains.</p>
@@ -30,7 +30,7 @@
                 <button class="species-count-card" type="button" data-species-shortcut="{{ item.value }}">
                     <span>{{ item.label }}</span>
                     <strong>{{ item.available }}</strong>
-                    <small>{{ item.done }} done · {{ item.total }} total</small>
+                    <small>{{ item.done }} done - {{ item.total }} total</small>
                 </button>
             {% empty %}
                 <p class="muted">Add questions from admin to populate this view.</p>
@@ -99,7 +99,11 @@ const modeCards = document.querySelectorAll("[data-mode-card]");
 const timerField = document.querySelector("[data-timer-field]");
 
 function syncQuizMode() {
-    const checked = document.querySelector('input[name="quiz_mode"]:checked');
+    let checked = document.querySelector('input[name="quiz_mode"]:checked');
+    if (!checked && modeCards.length) {
+        checked = modeCards[0].querySelector('input[name="quiz_mode"]');
+        if (checked) checked.checked = true;
+    }
     const isTimed = checked && checked.value === "timed";
     timerField.hidden = !isTimed;
     modeCards.forEach(function(card) {
