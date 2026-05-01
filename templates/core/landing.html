@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}RC | RCVS Exam Preparation{% endblock %}
+{% block title %}{{ site_settings.product_name|default:"RCVS Prep" }} | RCVS Exam Preparation{% endblock %}
 {% block content %}
 <section class="hero">
     <div class="hero-copy">
         <p class="eyebrow">RCVS exam preparation</p>
-        <h1>RC</h1>
-        <p>A focused clinical revision workspace for veterinary graduates preparing for RCVS exams with MCQs, timed practice, flashcards, weekly topics, and discussion.</p>
+        <h1>{{ site_settings.landing_headline|default:"Clinical exam prep for modern veterinary teams" }}</h1>
+        <p>{{ site_settings.landing_subheadline|default:"Prepare with focused MCQs, flashcards, and study resources designed for RCVS success." }}</p>
         <div class="actions">
             <a class="button" href="{% url 'register' %}">Create account</a>
             <a class="button button-ghost" href="{% url 'login' %}">Log in</a>
@@ -15,7 +15,7 @@
         <div>
             <span>Today</span>
             <strong>Timed cardiology set</strong>
-            <p class="muted">30 questions · 60 minutes</p>
+            <p class="muted">30 questions - 60 minutes</p>
         </div>
         <div>
             <span>Progress</span>

@@ -39,6 +39,26 @@
     </article>
 </section>
 
+<section class="panel species-availability-panel">
+    <div class="panel-header">
+        <div>
+            <p class="eyebrow">System availability</p>
+            <h2>Remaining questions by body system</h2>
+        </div>
+    </div>
+    <div class="species-count-grid">
+        {% for item in system_counts %}
+            <button class="species-count-card" type="button" data-system-shortcut="{{ item.value }}">
+                <span>{{ item.label }}</span>
+                <strong>{{ item.available }}</strong>
+                <small>{{ item.done }} done - {{ item.total }} total</small>
+            </button>
+        {% empty %}
+            <p class="muted">Add questions from admin to populate this view.</p>
+        {% endfor %}
+    </div>
+</section>
+
 <form method="post" class="panel form quiz-builder simple-quiz-builder" id="quiz-builder">
     {% csrf_token %}
 
@@ -123,6 +143,16 @@ document.querySelectorAll("[data-species-shortcut]").forEach(function(card) {
         const speciesSelect = document.querySelector('select[name="species"]');
         if (speciesSelect) {
             speciesSelect.value = card.dataset.speciesShortcut;
+            document.getElementById("quiz-builder").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    });
+});
+
+document.querySelectorAll("[data-system-shortcut]").forEach(function(card) {
+    card.addEventListener("click", function() {
+        const systemSelect = document.querySelector('select[name="systems"]');
+        if (systemSelect) {
+            systemSelect.value = card.dataset.systemShortcut;
             document.getElementById("quiz-builder").scrollIntoView({ behavior: "smooth", block: "start" });
         }
     });

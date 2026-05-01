@@ -155,20 +155,38 @@ def quiz_start(request):
     available_questions = Question.objects.exclude(id__in=done_question_ids)
     available_count = available_questions.count()
     done_count = len(done_question_ids)
-    species_counts = []
-    for value, label in SPECIES_CHOICES:
-        total_for_species = Question.objects.filter(species=value).count()
-        available_for_species = available_questions.filter(species=value).count()
-        if total_for_species:
-            species_counts.append(
-                {
-                    "value": value,
-                    "label": label,
-                    "available": available_for_species,
-                    "done": max(total_for_species - available_for_species, 0),
-                    "total": total_for_species,
-                }
-            )
+
+    def build_count_items(choice_list, field_name):
+        items = []
+        for value, label in choice_list:
+            total_for_value = Question.objects.filter(**{field_name: value}).count()
+            available_for_value = available_questions.filter(**{field_name: value}).count()
+            if total_for_value:
+                items.append(
+                    {
+                        "value": value,
+                        "label": label,
+                        "available": available_for_value,
+                        "done": max(total_for_value - available_for_value, 0),
+                        "total": total_for_value,
+                    }
+                )
+        return items
+
+    species_counts = build_count_items(SPECIES_CHOICES, "species")
+    system_counts = build_count_items(SYSTEM_CHOICES, "system")
+
+    species_choice_map = {item["value"]: item for item in species_counts}
+    system_choice_map = {item["value"]: item for item in system_counts}
+
+    form.fields["species"].choices = [
+        (value, f"{label} ({species_choice_map[value]['available']})") if value in species_choice_map else (value, label)
+        for value, label in form.fields["species"].choices
+    ]
+    form.fields["systems"].choices = [
+        (value, f"{label} ({system_choice_map[value]['available']})") if value in system_choice_map else (value, label)
+        for value, label in form.fields["systems"].choices
+    ]
 
     if request.method == "POST" and form.is_valid():
         questions = available_questions.prefetch_related("choices")
@@ -210,6 +228,7 @@ def quiz_start(request):
             "done_count": done_count,
             "total_count": total_count,
             "species_counts": species_counts,
+            "system_counts": system_counts,
         },
     )
 

@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
 from core import views
 
@@ -23,6 +23,11 @@ urlpatterns = [
     path("forum/topic/<int:topic_id>/", views.topic_detail, name="topic_detail"),
     path("forum/new/", views.new_topic, name="new_topic"),
 ]
+
+if settings.HAS_ALLAUTH:
+    urlpatterns += [
+        path("accounts/", include("allauth.urls")),
+    ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

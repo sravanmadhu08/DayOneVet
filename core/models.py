@@ -90,6 +90,9 @@ class UserProfile(models.Model):
     theme_mode = models.CharField(max_length=20, choices=THEME_MODE_CHOICES, default=LIGHT)
     plan = models.CharField(max_length=30, choices=PLAN_CHOICES, default=FREE)
     subscription_status = models.CharField(max_length=30, choices=STATUS_CHOICES, default=TRIALING)
+    stripe_customer_id = models.CharField(max_length=120, blank=True)
+    stripe_subscription_id = models.CharField(max_length=120, blank=True)
+    stripe_price_id = models.CharField(max_length=120, blank=True)
     trial_ends_at = models.DateTimeField(null=True, blank=True)
     current_period_end = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -384,3 +387,26 @@ class ForumReply(models.Model):
 
     def __str__(self):
         return f"Reply by {self.author} on {self.topic}"
+
+
+class SiteSettings(models.Model):
+    product_name = models.CharField(max_length=120, default="RCVS Prep")
+    tagline = models.CharField(max_length=180, default="Clinical exam practice")
+    header_brand_text = models.CharField(max_length=120, default="RCVS Prep")
+    logo_text = models.CharField(max_length=12, default="RC")
+    logo_image = models.ImageField(upload_to="site_brand/", blank=True, null=True)
+    landing_headline = models.CharField(max_length=200, default="Clinical exam prep for modern veterinary teams")
+    landing_subheadline = models.TextField(default="Prepare with focused MCQs, flashcards, and study resources designed for RCVS success.")
+    support_text = models.CharField(max_length=180, blank=True, default="Support: support@example.com")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Site settings"
+        verbose_name_plural = "Site settings"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return "Site settings"

@@ -194,6 +194,11 @@ class QuizModeTests(TestCase):
         dog_counts = [item for item in response.context["species_counts"] if item["value"] == "dog"][0]
         self.assertEqual(dog_counts["available"], 0)
         self.assertEqual(dog_counts["done"], 1)
+        cardio_counts = [item for item in response.context["system_counts"] if item["value"] == "cardiology"][0]
+        self.assertEqual(cardio_counts["available"], 1)
+        self.assertEqual(cardio_counts["done"], 1)
+        self.assertIn(("dog", "Dog (0)"), response.context["form"].fields["species"].choices)
+        self.assertIn(("cardiology", "Cardiology (1)"), response.context["form"].fields["systems"].choices)
 
     def test_done_pile_page_can_start_quiz_from_correctly_answered_questions(self):
         done_attempt = QuizAttempt.objects.create(user=self.user, total_questions=1, question_order=[self.question.id])

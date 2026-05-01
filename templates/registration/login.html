@@ -13,6 +13,11 @@
         {{ form.as_p }}
         <button class="button" type="submit">Login</button>
     </form>
+    {% if has_allauth %}
+        <div class="actions">
+            <a class="button button-ghost" href="{% url 'socialaccount_login' 'google' %}">Continue with Google</a>
+        </div>
+    {% endif %}
     <p class="auth-link">New to RC? <a href="{% url 'register' %}">Create an account</a></p>
 </section>
 {% endblock %}

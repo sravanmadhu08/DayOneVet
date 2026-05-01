@@ -14,6 +14,7 @@ from .models import (
     Question,
     QuizAttempt,
     StudyResource,
+    SiteSettings,
     UserAnswer,
     UserProfile,
     WeeklyStudyTopic,
@@ -30,9 +31,25 @@ class ChoiceInline(admin.TabularInline):
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "display_name", "plan", "subscription_status", "weekly_goal_questions", "target_exam_date")
+    list_display = ("user", "display_name", "plan", "subscription_status", "stripe_customer_id", "weekly_goal_questions", "target_exam_date")
     list_filter = ("plan", "subscription_status")
     search_fields = ("user__username", "user__email", "display_name", "profession")
+
+
+@admin.register(SiteSettings)
+class SiteSettingsAdmin(admin.ModelAdmin):
+    list_display = ("product_name", "header_brand_text", "updated_at")
+    fieldsets = (
+        ("Brand", {"fields": ("product_name", "tagline", "header_brand_text", "logo_text", "logo_image")}),
+        ("Landing content", {"fields": ("landing_headline", "landing_subheadline")}),
+        ("Footer/support", {"fields": ("support_text",)}),
+    )
+
+    def has_add_permission(self, request):
+        return not SiteSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Question)
